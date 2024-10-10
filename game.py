@@ -86,7 +86,7 @@ font = pygame.font.Font('font/Pixeltype.ttf', 50)
 score = 0
 
 head_surf = pygame.Surface((CELL_SIZE, CELL_SIZE))
-head_rect = head_surf.get_rect(center = (17,17))
+head_rect = head_surf.get_rect(center = (round(CELL_SIZE/2), round(CELL_SIZE/2)))
 head_surf.fill("green")
 snake_direction = [33, 0]
 
@@ -96,7 +96,10 @@ food_surf.fill("red")
 
 segment_surf = pygame.Surface((CELL_SIZE, CELL_SIZE))
 segment_surf.fill("green")
-segment_list = [head_rect]
+segment_list = [head_rect, 
+                segment_surf.get_rect(topleft = (1,1)), 
+                segment_surf.get_rect(topleft = (1,1)), 
+                segment_surf.get_rect(topleft = (1,1))]
 
 is_grid = True
 
