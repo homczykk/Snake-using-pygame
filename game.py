@@ -76,8 +76,6 @@ def snake_movement():
 pygame.init()
 window = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
-ICON = pygame.image.load("icon.png").convert_alpha()
-pygame.display.set_icon(ICON)
 pygame.display.set_caption("Snake")
 
 font = pygame.font.Font('font/Pixeltype.ttf', 50)
