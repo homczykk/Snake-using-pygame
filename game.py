@@ -72,6 +72,13 @@ def game_end():
     if head_rect.centery < 0 or head_rect.centery > CELL_SIZE*20:
         pygame.quit()
         exit()
+    
+    for i in range(len(segment_list)):
+        if i == 0:
+            pass
+        elif segment_list[i].centerx == head_rect.centerx and segment_list[i].centery == head_rect.centery:
+            pygame.quit()
+            exit()
 
 def snake_movement():
     head_rect.centerx += take_direction()[0]
@@ -81,6 +88,9 @@ def snake_movement():
 pygame.init()
 window = pygame.display.set_mode(RESOLUTION)
 clock = pygame.time.Clock()
+ICON = pygame.image.load("icon.png").convert_alpha()
+pygame.display.set_icon(ICON)
+pygame.display.set_caption("Snake")
 
 font = pygame.font.Font('font/Pixeltype.ttf', 50)
 score = 0
