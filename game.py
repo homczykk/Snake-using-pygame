@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, json
 from sys import exit
 
 class Player(pygame.sprite.Sprite):
@@ -32,6 +32,7 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(player_group.sprite, food_group, False):
             food.rect.centerx = random.randint(0, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
             food.rect.centery = random.randint(1, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
+            custom_colors()
             
             self.segment_list.append(self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE)))
             self.score += 1
@@ -55,16 +56,17 @@ class Player(pygame.sprite.Sprite):
         self.rect.centerx += self.direction[0]
         self.rect.centery += self.direction[1]
 
-    def end_game(self):
-        if self.rect.centerx > RESOLUTION[0] or self.rect.centerx < 0:
-            return True
-        if self.rect.centery > RESOLUTION[1] or self.rect.centery < CELL_SIZE:
-            return True
-        for i in range(2, len(self.segment_list)):
-            if self.segment_list[i].centerx == self.rect.centerx and self.segment_list[i].centery == self.rect.centery:
-                return True
 
-        return False
+
+    def save_score(self):
+        with open("scores.json", "r") as f:
+            data = json.load(f)
+
+        if self.score >= 5:
+            data["scores"].append({"score": self.score})
+        
+        with open("scores.json", "w") as f:
+            json.dump(data, f, indent=2)
     
     def restart_game(self):
         self.score = 0       
@@ -76,11 +78,9 @@ class Player(pygame.sprite.Sprite):
         self.direction = [CELL_SIZE, 0]
 
     def update(self):
-        self.end_game()
         self.segments_movement()
         self.snake_move()
         self.snake_grow()
-
 
 class Food(pygame.sprite.Sprite):
     def __init__(self):
@@ -100,7 +100,7 @@ def draw_grid():
             
 def score_zone(score):
     score_zone_surf = pygame.Surface((RESOLUTION[0], CELL_SIZE))
-    score_zone_surf.fill("gray20")
+    score_zone_surf.fill("gray5")
     score_zone_rect = score_zone_surf.get_rect(topleft = (0,0))
 
     score_surf = FONT.render(f'Score: {score}', False, "white")
@@ -109,17 +109,61 @@ def score_zone(score):
     window.blit(score_zone_surf, score_zone_rect)
     window.blit(score_surf, score_rect)
 
-def end_game_screen():
+def custom_colors():
+    if random.randint(0, 100) < 1:
+        choice = random.randint(0,2)
+        if choice == 0:
+            food.image.fill("yellow")
+        if choice == 1:
+            food.image.fill("purple")
+        if choice == 2:
+            food.image.fill("blue")
+    else:
+        food.image.fill("red")
+
+def ranking():
     window.blit(end_game_title, end_game_title_rect)
     window.blit(end_game_msg, end_game_msg_rect)
 
+    with open('scores.json') as f:
+        data = json.load(f) 
+        
+    sorted_data = sorted(data["scores"], key=lambda x: x["score"], reverse=True)
+
+    first_place_score = int(sorted_data[0]["score"])
+    second_place_score = int(sorted_data[1]["score"])
+    third_place_score = int(sorted_data[2]["score"])
+
+    first_place_surf = FONT.render(f" 1.               {first_place_score}", False, "gold")
+    second_place_surf = FONT.render(f"2.               {second_place_score}", False, "silver")
+    third_place_surf = FONT.render(f"3.               {third_place_score}", False, "darkorange3")
+
+    first_place_rect = first_place_surf.get_rect(topleft = (230, 230))
+    second_place_rect = second_place_surf.get_rect(topleft = (230, 290))
+    third_place_rect = third_place_surf.get_rect(topleft = (230, 350))
+    
+    window.blit(ranking_surf, ranking_rect)
+    window.blit(first_place_surf, first_place_rect)
+    window.blit(second_place_surf, second_place_rect)
+    window.blit(third_place_surf, third_place_rect)
+
+def end_game():
+    if player.rect.centerx > RESOLUTION[0] or player.rect.centerx < 0:
+        return True
+    if player.rect.centery > RESOLUTION[1] or player.rect.centery < CELL_SIZE:
+        return True
+    for i in range(2, len(player.segment_list)):
+        if player.segment_list[i].centerx == player.rect.centerx and player.segment_list[i].centery == player.rect.centery:
+            return True
+    
+    return False
+
 # These can be changed
 FRAMERATE = 15 # At least 15 FPS.
-CELL_SIZE = 26 # This must be even
-CELL_NUMBER = 20 
+CELL_SIZE = 40 # This must be even
+CELL_NUMBER = 15 
 
 RESOLUTION = (CELL_SIZE*CELL_NUMBER+1,CELL_SIZE*CELL_NUMBER+1)
-
 
 pygame.init()
 
@@ -144,7 +188,12 @@ end_game_title_rect = end_game_title.get_rect(center = (RESOLUTION[0]/2, RESOLUT
 end_game_msg = FONT.render('press r to play', False, "grey30")
 end_game_msg_rect = end_game_msg.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]*3/4))
 
+ranking_surf = pygame.Surface((200, 200))
+ranking_surf.fill("grey5")
+ranking_rect = ranking_surf.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/2))
+
 is_first_attempt = True
+is_score_saved = True
 
 while True:
     for event in pygame.event.get():
@@ -153,16 +202,20 @@ while True:
             exit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                if player.end_game():
+                if end_game():
                     player.restart_game()
+                    is_score_saved = False
                 if is_first_attempt:
                     is_first_attempt = False
-                
 
-    
-    if player.end_game() or is_first_attempt: 
+    if end_game() or is_first_attempt:
+        
+        if not is_score_saved:
+            player.save_score()
+            is_score_saved = True
+
         window.fill("black")
-        end_game_screen()
+        ranking()
 
     else:
         window.fill("black")
