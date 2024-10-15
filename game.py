@@ -7,16 +7,16 @@ class Player(pygame.sprite.Sprite):
 
         self.image = pygame.Surface((CELL_SIZE-1, CELL_SIZE-1))
         self.image.fill("green")
-        self.rect = self.image.get_rect(center = (CELL_SIZE*3/2,CELL_SIZE*3/2))
+        self.rect = self.image.get_rect(center = (round(CELL_SIZE*3/2),round(CELL_SIZE*3/2)))
 
-        self.direction = [26, 0]
+        self.direction = [CELL_SIZE, 0]
 
         self.segment_surf = pygame.Surface((CELL_SIZE-3,CELL_SIZE-3))
         self.segment_surf.fill("green")
         self.segment_list = [self.rect,
-                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE)),
-                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE)),
-                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE))]
+                             self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE)),
+                             self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE)),
+                             self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE))]
         self.score = 0
     
     def segments_movement(self):
@@ -30,10 +30,10 @@ class Player(pygame.sprite.Sprite):
         
     def snake_grow(self):
         if pygame.sprite.spritecollide(player_group.sprite, food_group, False):
-            food.rect.centerx = random.randint(0, 19)*CELL_SIZE + 13
-            food.rect.centery = random.randint(1, 19)*CELL_SIZE + 13
+            food.rect.centerx = random.randint(0, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
+            food.rect.centery = random.randint(1, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
             
-            self.segment_list.append(self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE)))
+            self.segment_list.append(self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE)))
             self.score += 1
 
     def snake_move(self):
@@ -57,16 +57,23 @@ class Player(pygame.sprite.Sprite):
 
     def end_game(self):
         if self.rect.centerx > RESOLUTION[0] or self.rect.centerx < 0:
-            pygame.quit()
-            exit()
+            return True
         if self.rect.centery > RESOLUTION[1] or self.rect.centery < CELL_SIZE:
-            pygame.quit()
-            exit()
-        
+            return True
         for i in range(2, len(self.segment_list)):
             if self.segment_list[i].centerx == self.rect.centerx and self.segment_list[i].centery == self.rect.centery:
-                pygame.quit()
-                exit()
+                return True
+
+        return False
+    
+    def restart_game(self):
+        self.score = 0       
+        self.rect.center = (CELL_SIZE*3/2,CELL_SIZE*3/2)
+        self.segment_list = [self.rect,
+                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE)),
+                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE)),
+                             self.segment_surf.get_rect(topleft = (-CELL_SIZE, -CELL_SIZE))]
+        self.direction = [CELL_SIZE, 0]
 
     def update(self):
         self.end_game()
@@ -81,7 +88,8 @@ class Food(pygame.sprite.Sprite):
         
         self.image = pygame.Surface((CELL_SIZE-1, CELL_SIZE-1))
         self.image.fill("red")
-        self.rect = self.image.get_rect(center = (CELL_SIZE*10+13, CELL_SIZE*10+13))
+        self.rect = self.image.get_rect(center = (CELL_SIZE*round(CELL_NUMBER/2)+round(CELL_SIZE/2), CELL_SIZE*round(CELL_NUMBER/2)+round(CELL_SIZE/2)))
+
 def draw_grid():
     for i in range(CELL_NUMBER + 1):
         if i == 0:
@@ -96,20 +104,30 @@ def score_zone(score):
     score_zone_rect = score_zone_surf.get_rect(topleft = (0,0))
 
     score_surf = FONT.render(f'Score: {score}', False, "white")
-    score_rect = score_surf.get_rect(center = (RESOLUTION[0]/2, 18))
+    score_rect = score_surf.get_rect(center = (RESOLUTION[0]/2, CELL_SIZE*0.65))
 
     window.blit(score_zone_surf, score_zone_rect)
     window.blit(score_surf, score_rect)
 
-CELL_SIZE = 26
-CELL_NUMBER = 27
+def end_game_screen():
+    window.blit(end_game_title, end_game_title_rect)
+    window.blit(end_game_msg, end_game_msg_rect)
+
+# These can be changed
+FRAMERATE = 15 # At least 15 FPS.
+CELL_SIZE = 26 # This must be even
+CELL_NUMBER = 20 
+
 RESOLUTION = (CELL_SIZE*CELL_NUMBER+1,CELL_SIZE*CELL_NUMBER+1)
-FRAMERATE = 15
+
 
 pygame.init()
 
 FONT = pygame.font.Font('font/Pixeltype.ttf', 50)
+FONT_TITLE = pygame.font.Font('font/ARCADE.ttf', CELL_NUMBER * 8)
+
 window = pygame.display.set_mode(RESOLUTION)
+pygame.display.set_caption("Snake")
 clock = pygame.time.Clock()
 
 player_group = pygame.sprite.GroupSingle()
@@ -120,21 +138,42 @@ food_group = pygame.sprite.GroupSingle()
 food = Food()
 food_group.add(food)
 
+end_game_title = FONT_TITLE.render('SNAKE', False, "green")
+end_game_title_rect = end_game_title.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/4))
+
+end_game_msg = FONT.render('press r to play', False, "grey30")
+end_game_msg_rect = end_game_msg.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]*3/4))
+
+is_first_attempt = True
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                if player.end_game():
+                    player.restart_game()
+                if is_first_attempt:
+                    is_first_attempt = False
+                
 
-    window.fill("black")
-    draw_grid()
+    
+    if player.end_game() or is_first_attempt: 
+        window.fill("black")
+        end_game_screen()
 
-    score_zone(player.score)
+    else:
+        window.fill("black")
+        draw_grid()
 
-    player_group.draw(window)
-    food_group.draw(window)
-    player_group.update()
-    food_group.update()
+        score_zone(player.score)
+
+        player_group.draw(window)
+        food_group.draw(window)
+        player_group.update()
+        food_group.update()
 
     pygame.display.update()
     clock.tick(FRAMERATE)
