@@ -32,7 +32,6 @@ class Player(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(player_group.sprite, food_group, False):
             food.rect.centerx = random.randint(0, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
             food.rect.centery = random.randint(1, CELL_NUMBER-1)*CELL_SIZE + round(CELL_SIZE/2)
-            custom_colors()
             
             self.segment_list.append(self.segment_surf.get_rect(center = (-CELL_SIZE, -CELL_SIZE)))
             self.score += 1
@@ -56,8 +55,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.centerx += self.direction[0]
         self.rect.centery += self.direction[1]
 
-
-
     def save_score(self):
         with open("scores.json", "r") as f:
             data = json.load(f)
@@ -68,7 +65,7 @@ class Player(pygame.sprite.Sprite):
         with open("scores.json", "w") as f:
             json.dump(data, f, indent=2)
     
-    def restart_game(self):
+    def reset_state(self):
         self.score = 0       
         self.rect.center = (CELL_SIZE*3/2,CELL_SIZE*3/2)
         self.segment_list = [self.rect,
@@ -109,18 +106,6 @@ def score_zone(score):
     window.blit(score_zone_surf, score_zone_rect)
     window.blit(score_surf, score_rect)
 
-def custom_colors():
-    if random.randint(0, 100) < 1:
-        choice = random.randint(0,2)
-        if choice == 0:
-            food.image.fill("yellow")
-        if choice == 1:
-            food.image.fill("purple")
-        if choice == 2:
-            food.image.fill("blue")
-    else:
-        food.image.fill("red")
-
 def ranking():
     window.blit(end_game_title, end_game_title_rect)
     window.blit(end_game_msg, end_game_msg_rect)
@@ -134,13 +119,15 @@ def ranking():
     second_place_score = int(sorted_data[1]["score"])
     third_place_score = int(sorted_data[2]["score"])
 
-    first_place_surf = FONT.render(f" 1.               {first_place_score}", False, "gold")
-    second_place_surf = FONT.render(f"2.               {second_place_score}", False, "silver")
-    third_place_surf = FONT.render(f"3.               {third_place_score}", False, "darkorange3")
+    spaces = ' '*10
+    first_place_surf = FONT.render(f"  1.{spaces}{first_place_score}", False, "gold")
+    second_place_surf = FONT.render(f"2.{spaces}{second_place_score}", False, "silver")
+    third_place_surf = FONT.render(f"3.{spaces}{third_place_score}", False, "darkorange3")
 
-    first_place_rect = first_place_surf.get_rect(topleft = (230, 230))
-    second_place_rect = second_place_surf.get_rect(topleft = (230, 290))
-    third_place_rect = third_place_surf.get_rect(topleft = (230, 350))
+    offset = 65
+    first_place_rect = first_place_surf.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/2 - offset))
+    second_place_rect = second_place_surf.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/2))
+    third_place_rect = third_place_surf.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/2 + offset))
     
     window.blit(ranking_surf, ranking_rect)
     window.blit(first_place_surf, first_place_rect)
@@ -185,8 +172,8 @@ food_group.add(food)
 end_game_title = FONT_TITLE.render('SNAKE', False, "green")
 end_game_title_rect = end_game_title.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]/4))
 
-end_game_msg = FONT.render('press r to play', False, "grey30")
-end_game_msg_rect = end_game_msg.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]*3/4))
+end_game_msg = FONT.render('-- press r to play --', False, "grey30")
+end_game_msg_rect = end_game_msg.get_rect(center = (RESOLUTION[0]/2, RESOLUTION[0]*9/10))
 
 ranking_surf = pygame.Surface((200, 200))
 ranking_surf.fill("grey5")
@@ -203,7 +190,7 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
                 if end_game():
-                    player.restart_game()
+                    player.reset_state()
                     is_score_saved = False
                 if is_first_attempt:
                     is_first_attempt = False
