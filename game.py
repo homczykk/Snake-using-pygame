@@ -76,8 +76,9 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         self.segments_movement()
-        self.snake_move()
         self.snake_grow()
+        self.snake_move()
+
 
 class Food(pygame.sprite.Sprite):
     def __init__(self):
@@ -147,7 +148,7 @@ def end_game():
 
 # These can be changed
 FRAMERATE = 15 # At least 15 FPS.
-CELL_SIZE = 40 # This must be even
+CELL_SIZE = 34 # This must be even
 CELL_NUMBER = 15 
 
 RESOLUTION = (CELL_SIZE*CELL_NUMBER+1,CELL_SIZE*CELL_NUMBER+1)
@@ -208,12 +209,13 @@ while True:
         window.fill("black")
         draw_grid()
 
-        score_zone(player.score)
-
-        player_group.draw(window)
-        food_group.draw(window)
         player_group.update()
+        player_group.draw(window)
+
+        food_group.draw(window)
         food_group.update()
+        
+        score_zone(player.score)
 
     pygame.display.update()
     clock.tick(FRAMERATE)
